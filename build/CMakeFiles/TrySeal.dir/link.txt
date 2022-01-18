@@ -1,0 +1,1 @@
+/opt/rh/devtoolset-10/root/usr/bin/c++ CMakeFiles/TrySeal.dir/trySeal.cpp.o -o TrySeal  -Wl,-rpath,/usr/local/lib64 /usr/local/lib64/libseal.so.3.7.2 -pthread 

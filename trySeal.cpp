@@ -96,20 +96,27 @@ int main()
   //B根据实际数据和特征进行分箱，分箱时需注意每个分箱中数据不能为0，否则对数计算为无穷大，失去意义
   //注意分箱数、分箱正负样本数，总的正负样本数等参数与每个特征有关，不同的特征对应的这些数可以是不同的
 
-  const int feaNum = 2;                      //总的特征数量
-  const int boxNum[feaNum] = {10, 10};       //分箱数, 10, 20, 30 ,40等, 不同的特征对应的分箱数可以不同
-  int TsampleNum = 400000;                   //样本总数,以40万为例, 样本总数=所有的正样本数+所有的负样本数
-  double TposNum[feaNum] = {220000, 180000}; //所有的正样本数
-  double TnegNum[feaNum] = {180000, 220000}; //所有的负样本数
+  const int feaNum = 4;                                      //总的特征数量
+  const int boxNum[feaNum] = {10, 10, 10, 10};               //分箱数, 10, 20, 30 ,40等, 不同的特征对应的分箱数可以不同
+  int TsampleNum = 400000;                                   //样本总数,以40万为例, 样本总数=所有的正样本数+所有的负样本数
+  double TposNum[feaNum] = {220000, 180000, 220000, 180000}; //所有的正样本数
+  double TnegNum[feaNum] = {180000, 220000, 180000, 220000}; //所有的负样本数
 
   //10个分箱中每个分箱样本数量=10个分箱每个分箱的正样本+负样本数
   vector<double> SsampleNum[feaNum] = {{45000, 35000, 55000, 25000, 35000, 45000, 15000, 65000, 60000, 20000},
+                                       {40000, 40000, 50000, 30000, 30000, 50000, 20000, 60000, 70000, 10000},
+                                       {45000, 35000, 55000, 25000, 35000, 45000, 15000, 65000, 60000, 20000},
                                        {40000, 40000, 50000, 30000, 30000, 50000, 20000, 60000, 70000, 10000}};
   //10个分箱的正样本和负样本数
   //这里使用浮点而不用整型，符合编码的函数参数类型double
   vector<double> SposNum[feaNum] = {{25000, 15000, 40000, 20000, 15000, 15000, 10000, 45000, 30000, 5000},
+                                    {20000, 15000, 40000, 15000, 15000, 15000, 10000, 15000, 30000, 5000},
+                                    {25000, 15000, 40000, 20000, 15000, 15000, 10000, 45000, 30000, 5000},
                                     {20000, 15000, 40000, 15000, 15000, 15000, 10000, 15000, 30000, 5000}};
+
   vector<double> SnegNum[feaNum] = {{20000, 20000, 15000, 5000, 20000, 30000, 5000, 20000, 30000, 15000},
+                                    {20000, 25000, 10000, 15000, 15000, 35000, 10000, 45000, 40000, 5000},
+                                    {20000, 20000, 15000, 5000, 20000, 30000, 5000, 20000, 30000, 15000},
                                     {20000, 25000, 10000, 15000, 15000, 35000, 10000, 45000, 40000, 5000}};
 
   int TboxNum = 0; //分箱总数
@@ -674,17 +681,42 @@ int main()
 
   cout << "here0!!!" << endl;
 
+  //记录移位位置
+  int shift[feaNum] = {0};
+  shift[0] = 0;
+  int shiftSum=0;
+
+  if (feaNum > 1)
+  {
+    for (int i = 1; i < feaNum; i++)
+    {
+      shiftSum+=boxNum[i - 1];
+      shift[i] = shiftSum-i; //紧接着上面一个IV值
+    }
+  }
+
   for (int i = 0; i < feaNum; i++)
   {
+
     evaluator2.mod_switch_to_inplace(Pextract[i], Sum_parms_id);
     evaluator2.multiply_plain_inplace(Sum[i], Pextract[i]);
     evaluator2.rescale_to_next_inplace(Sum[i]);
+    //对Sum[i]进行相应位置的移位，保证所有特征的IV值排在密文向量的前面，方便解密后获取
+    evaluator2.rotate_vector_inplace(Sum[i], shift[i], galois_keys2);
   }
 
-  evaluator2.add(Sum[0], Sum[1], IV);
-
-  if (feaNum > 2)
+  if (feaNum == 1)
   {
+    IV = Sum[0];
+  }
+  else if (feaNum == 2)
+  {
+    evaluator2.add(Sum[0], Sum[1], IV);
+  }
+  else if (feaNum > 2)
+  {
+    evaluator2.add(Sum[0], Sum[1], IV);
+
     for (int i = 2; i < feaNum; i++)
     {
       evaluator2.add_inplace(IV, Sum[i]);

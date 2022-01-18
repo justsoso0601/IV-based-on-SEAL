@@ -1,0 +1,3 @@
+/home/light/code/src/IV-based-on-SEAL/build/CMakeFiles/rebuild_cache.dir
+/home/light/code/src/IV-based-on-SEAL/build/CMakeFiles/edit_cache.dir
+/home/light/code/src/IV-based-on-SEAL/build/CMakeFiles/TrySeal.dir
