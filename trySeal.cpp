@@ -52,7 +52,6 @@ int main()
 
   size_t poly_modulus_degree2 = 16384; //slot数量为16384/2=8192
   params2.set_poly_modulus_degree(poly_modulus_degree2);
-  //params2.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree2, {60, 40, 40, 40, 40, 40, 40, 60})); //包括常数系数乘积在内，乘法深度为5
   params2.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree2, {60, 50, 50, 50, 50, 50, 50, 60})); //包括常数系数乘积在内，乘法深度为5
 
   //选用2^40进行编码，这个参数是精度的设置，噪声在10-15比特，所以最终计算的精度为25-30比特（40-15， 40-10）
@@ -79,9 +78,8 @@ int main()
   CKKSEncoder encoder2(context2);
 
   //泰勒展开式的10个系数不变量
-  vector<double>
-      coeff = {0.4342944819, -0.2171472409, 0.1447648273, -0.1085736204, 0.0868588963,
-               -0.0723824136, 0.0620420688, -0.0542868102, 0.0482549424, -0.0434294481};
+  vector<double> coeff = {0.4342944819, -0.2171472409, 0.1447648273, -0.1085736204, 0.0868588963,
+                          -0.0723824136, 0.0620420688, -0.0542868102, 0.0482549424, -0.0434294481};
 
   //编码这10个泰勒展开式系数常量
   const int coeffNum = 10;
@@ -96,28 +94,62 @@ int main()
   //B根据实际数据和特征进行分箱，分箱时需注意每个分箱中数据不能为0，否则对数计算为无穷大，失去意义
   //注意分箱数、分箱正负样本数，总的正负样本数等参数与每个特征有关，不同的特征对应的这些数可以是不同的
 
-  const int feaNum = 4;                                      //总的特征数量
-  const int boxNum[feaNum] = {10, 10, 10, 10};               //分箱数, 10, 20, 30 ,40等, 不同的特征对应的分箱数可以不同
-  int TsampleNum = 400000;                                   //样本总数,以40万为例, 样本总数=所有的正样本数+所有的负样本数
-  double TposNum[feaNum] = {220000, 180000, 220000, 180000}; //所有的正样本数
-  double TnegNum[feaNum] = {180000, 220000, 180000, 220000}; //所有的负样本数
+  /*
+  int TsampleNum = 400000;                   //样本总数,以40万为例, 样本总数=所有的正样本数+所有的负样本数
+  const int feaNum = 2;                      //总的特征数量
+  const int boxNum[feaNum] = {10, 10};       //分箱数, 10, 20, 30 ,40等, 不同的特征对应的分箱数可以不同
+  double TposNum[feaNum] = {220000, 180000}; //所有的正样本数
+  double TnegNum[feaNum] = {180000, 220000}; //所有的负样本数
 
   //10个分箱中每个分箱样本数量=10个分箱每个分箱的正样本+负样本数
   vector<double> SsampleNum[feaNum] = {{45000, 35000, 55000, 25000, 35000, 45000, 15000, 65000, 60000, 20000},
-                                       {40000, 40000, 50000, 30000, 30000, 50000, 20000, 60000, 70000, 10000},
-                                       {45000, 35000, 55000, 25000, 35000, 45000, 15000, 65000, 60000, 20000},
                                        {40000, 40000, 50000, 30000, 30000, 50000, 20000, 60000, 70000, 10000}};
   //10个分箱的正样本和负样本数
   //这里使用浮点而不用整型，符合编码的函数参数类型double
-  vector<double> SposNum[feaNum] = {{25000, 15000, 40000, 20000, 15000, 15000, 10000, 45000, 30000, 5000},
-                                    {20000, 15000, 40000, 15000, 15000, 15000, 10000, 15000, 30000, 5000},
-                                    {25000, 15000, 40000, 20000, 15000, 15000, 10000, 45000, 30000, 5000},
-                                    {20000, 15000, 40000, 15000, 15000, 15000, 10000, 15000, 30000, 5000}};
+  vector<double> SposNum[feaNum] = {
+      {25000, 15000, 40000, 20000, 15000, 15000, 10000, 45000, 30000, 5000},
+      {20000, 15000, 40000, 15000, 15000, 15000, 10000, 15000, 30000, 5000},
+  };
 
-  vector<double> SnegNum[feaNum] = {{20000, 20000, 15000, 5000, 20000, 30000, 5000, 20000, 30000, 15000},
-                                    {20000, 25000, 10000, 15000, 15000, 35000, 10000, 45000, 40000, 5000},
-                                    {20000, 20000, 15000, 5000, 20000, 30000, 5000, 20000, 30000, 15000},
-                                    {20000, 25000, 10000, 15000, 15000, 35000, 10000, 45000, 40000, 5000}};
+  vector<double> SnegNum[feaNum] = {
+      {20000, 20000, 15000, 5000, 20000, 30000, 5000, 20000, 30000, 15000},
+      {20000, 25000, 10000, 15000, 15000, 35000, 10000, 45000, 40000, 5000},
+  };
+*/
+
+  int TsampleNum = 100;                    //样本总数, 样本总数=所有的正样本数+所有的负样本数
+  const int feaNum = 5;                    //总的特征数量
+  const int boxNum[feaNum] = {10, 10, 10, 10, 10}; //分箱数, 10, 20, 30 ,40等, 不同的特征对应的分箱数可以不同
+  double TposNum[feaNum] = {60, 60, 60, 60, 60};   //所有的正样本数
+  double TnegNum[feaNum] = {40, 40, 40, 40, 40};   //所有的负样本数
+
+  //10个分箱中每个分箱样本数量=10个分箱每个分箱的正样本+负样本数
+  vector<double> SsampleNum[feaNum] = {
+      {8, 12, 7, 9, 8, 16, 10, 15, 9, 6},
+      {8, 12, 7, 9, 8, 16, 10, 15, 9, 6},
+      {8, 12, 7, 9, 8, 16, 10, 15, 9, 6},
+      {8, 12, 7, 9, 8, 16, 10, 15, 9, 6},
+      {8, 12, 7, 9, 8, 16, 10, 15, 9, 6}
+  };
+  //10个分箱的正样本和负样本数
+  //这里使用浮点而不用整型，符合编码的函数参数类型double
+  vector<double> SposNum[feaNum] = {
+      {5, 7, 3, 4, 5, 10, 8, 9, 4, 5},
+      {5, 7, 3, 4, 5, 10, 8, 9, 4, 5},
+      {5, 7, 3, 4, 5, 10, 8, 9, 4, 5},
+      {5, 7, 3, 4, 5, 10, 8, 9, 4, 5},
+      {5, 7, 3, 4, 5, 10, 8, 9, 4, 5},
+      };
+
+  vector<double> SnegNum[feaNum] = {
+      {3, 5, 4, 5, 3, 6, 2, 6, 5, 1},
+      {3, 5, 4, 5, 3, 6, 2, 6, 5, 1},
+      {3, 5, 4, 5, 3, 6, 2, 6, 5, 1},
+      {3, 5, 4, 5, 3, 6, 2, 6, 5, 1},
+      {3, 5, 4, 5, 3, 6, 2, 6, 5, 1}
+      };
+
+
 
   int TboxNum = 0; //分箱总数
   for (int i = 0; i < feaNum; i++)
@@ -125,32 +157,202 @@ int main()
     TboxNum += boxNum[i];
   }
 
-  vector<double> posNum = {}; //处理的向量分量数就是所有特征的分箱数之和
-  vector<double> Pg = {};     //g_i的明文数据,用于明文方式计算结果比对
+  //A对每个特征所有的样本的标签进行加密，并发送给B
+  //先按上面的数据造出对应的明文标签（满足上面的正样本和负样本数）
+  vector<double> alltag[feaNum] = {};
+  for (int i = 0; i < feaNum; i++)
+  {
+    for (int j = 0; j < boxNum[i]; j++) //注意SposNum[i]的size大小就是分箱数量
+    {
+      for (int k = 0; k < SposNum[i][j]; k++)
+      {
+        alltag[i].push_back(1.0); //正样本
+      }
+
+      for (int k = 0; k < SnegNum[i][j]; k++)
+      {
+        alltag[i].push_back(0.0); //负样本
+      }
+    }
+  }
+
+  //A对每个特征的alltag进行加密，然后发送给B
+  map<int, Ciphertext> cipherTagMap[feaNum];
+
+  for (int i = 0; i < feaNum; i++)
+  {
+    //生成每个样本标签的密文
+    for (int j = 0; j < TsampleNum; j++) //每个特征的总样本数都是相同的
+    {
+      vector<double> sampleTag = {};
+      sampleTag.push_back(alltag[i][j]); //形成标签的vector，这样才方便后续计算时一个分箱的tag求和
+
+      Plaintext PsampleTag;
+      encoder2.encode(sampleTag, scale, PsampleTag);
+      Ciphertext CsampleTag;
+      encryptor2.encrypt(PsampleTag, CsampleTag);
+
+      //插入map
+      pair<map<int, Ciphertext>::iterator, bool> ret;
+      ret = cipherTagMap[i].insert(pair<int, Ciphertext>(j, CsampleTag));
+      if (ret.second == false)
+      {
+        cout << "The feaNum " << i << "of element " << j << "already existed!" << endl;
+      }
+    }
+  }
+
+  //将cipherTagMap[feaNum]发送给B
+  //B按照分箱里的样本编号对标签的密文进行求和
+  //该demo里每个分箱的样本编号按全部样本的顺序排列，实际中每个分箱里的样本编号是随意的，但这不影响计算的逻辑
+  //只需要把每个分箱对应的样本编号的密文取出即可（这就是我们用map的原因）
+
+  //首先对每个特征下每个分箱的总数进行加密，用于后续减去正样本数得到负样本数
+  Ciphertext CfeaPosNum[feaNum], CfeaNegNum[feaNum]; //每个特征的所有分箱的正样本和负样本数的密文向量
+
+  for (int i = 0; i < feaNum; i++)
+  {
+    const int bNum = boxNum[i];
+    Ciphertext CboxTotalNum[bNum];
+
+    for (int j = 0; j < bNum; j++)
+    {
+      vector<double> vecBoxTotalNum = {};
+      vecBoxTotalNum.push_back(SsampleNum[i][j]);
+      Plaintext PboxTotalNum;
+      encoder2.encode(vecBoxTotalNum, scale, PboxTotalNum);
+      encryptor2.encrypt(PboxTotalNum, CboxTotalNum[j]);
+    }
+
+    cout << "here ok 1" << endl;
+    //下面计算每个分箱的正样本和负样本数
+    Ciphertext CboxPosSum[bNum]; //每个分箱正样本数
+    Ciphertext CboxNegSum[bNum]; //每个分箱负样本数
+
+    //如果这里分箱内的样本编号是随意的，则应先把样本编号数据抽取出来，再根据这些编号数据进行对应的密文求和
+
+    //把0进行加密，方便求和
+    vector<double> zero = {};
+    zero.push_back(0.0);
+    Plaintext Pzero;
+    Ciphertext Czero;
+    encoder2.encode(zero, scale, Pzero);
+    encryptor2.encrypt(Pzero, Czero);
+
+    int mapIndex = 0;
+    for (int j = 0; j < bNum; j++)
+    {
+      if (j == 0)
+      {
+        mapIndex += 0;
+      }
+      else
+      {
+        mapIndex += SsampleNum[i][j - 1];
+      }
+
+      vector<double> zero = {};
+      zero.push_back(0.0);
+      Plaintext Pzero;
+      Ciphertext Czero;
+      encoder2.encode(zero, scale, Pzero);
+      encryptor2.encrypt(Pzero, CboxPosSum[j]); //初始化为0的密文
+
+      cout << "here ok 2_0" << endl;
+      for (int k = mapIndex; k < mapIndex + SsampleNum[i][j]; k++)
+      {
+        evaluator2.add_inplace(CboxPosSum[j], cipherTagMap[i].at(k));
+      }
+
+      cout << "here ok 2_1" << endl;
+      //用分箱总数的密文-分箱正样本数的密文：得到分箱负样本数的密文
+      evaluator2.sub(CboxTotalNum[j], CboxPosSum[j], CboxNegSum[j]);
+    }
+
+    //把向量化的密文相加得到所有分箱的正负样本数的密文向量
+    //Ciphertext CposNum, CnegNum;
+    vector<double> zero1 = {};
+    zero1.push_back(0.0);
+    Plaintext Pzero1;
+    encoder2.encode(zero1, scale, Pzero1);
+    encryptor2.encrypt(Pzero1, CfeaPosNum[i]); //初始化为0的密文
+    encryptor2.encrypt(Pzero1, CfeaNegNum[i]);
+
+    for (int m = 0; m < bNum; m++)
+    {
+      //把对应的向量密文移位,然后加起来
+      int shift = 0 - m; //负数往右移
+      evaluator2.rotate_vector_inplace(CboxPosSum[m], shift, galois_keys2);
+      evaluator2.rotate_vector_inplace(CboxNegSum[m], shift, galois_keys2);
+      evaluator2.add_inplace(CfeaPosNum[i], CboxPosSum[m]);
+      evaluator2.add_inplace(CfeaNegNum[i], CboxNegSum[m]);
+    }
+  }
+
+  //现在把不同特征的正样本数密文向量和负样本数密文向量形成一个向量
+  Ciphertext CposNum, CnegNum;
+
+  vector<double> zero2 = {};
+  zero2.push_back(0.0);
+  Plaintext Pzero2;
+  encoder2.encode(zero2, scale, Pzero2);
+  encryptor2.encrypt(Pzero2, CposNum); //初始化为0的密文
+  encryptor2.encrypt(Pzero2, CnegNum);
+
+  int feaShiftSum = 0;
+  for (int i = 0; i < feaNum; i++)
+  {
+    //把对应的向量密文移位,然后加起来   
+    if (i == 0)
+    {
+      feaShiftSum += 0;
+    }
+    else
+    {
+      feaShiftSum += boxNum[i - 1];
+    }
+
+    int shift = 0 - feaShiftSum; //负数往右移
+    evaluator2.rotate_vector_inplace(CfeaPosNum[i], shift, galois_keys2);
+    evaluator2.rotate_vector_inplace(CfeaNegNum[i], shift, galois_keys2);
+    evaluator2.add_inplace(CposNum, CfeaPosNum[i]);
+    evaluator2.add_inplace(CnegNum, CfeaNegNum[i]);
+  }
+
+  Plaintext Pcheck;
+  decryptor2.decrypt(CposNum, Pcheck); //解密
+  vector<double> vecCheck;
+  encoder2.decode(Pcheck, vecCheck); //解码
+  cout << "CposNum计算结果 ......." << endl;
+  print_vector(vecCheck, TboxNum, 12);
+
+  //vector<double> posNum = {}; //处理的向量分量数就是所有特征的分箱数之和
+  vector<double> Pg = {}; //g_i的明文数据,用于明文方式计算结果比对//
 
   for (int i = 0; i < feaNum; i++) //展开所有特征的分箱分量，依次排好
   {
     for (int j = 0; j < SposNum[i].size(); j++)
     {
-      posNum.push_back(SposNum[i][j]);
+      //posNum.push_back(SposNum[i][j]);
       Pg.push_back(SposNum[i][j] / TposNum[i] - 1);
     }
   }
 
-  vector<double> negNum = {}; //处理的向量分量数就是所有特征的分箱数之和
-  vector<double> Pb = {};     //b_i的明文数据,用于明文方式计算结果比对
+  //vector<double> negNum = {}; //处理的向量分量数就是所有特征的分箱数之和
+  vector<double> Pb = {}; //b_i的明文数据,用于明文方式计算结果比对
 
   for (int i = 0; i < feaNum; i++)
   {
     for (int j = 0; j < SnegNum[i].size(); j++)
     {
-      negNum.push_back(SnegNum[i][j]);
+      //negNum.push_back(SnegNum[i][j]);
       Pb.push_back(SnegNum[i][j] / TnegNum[i] - 1);
     }
   }
 
   //A对posNum和negNum进行加密发送给B
 
+  /*
   //对向量posNum、negNum进行编码
   Plaintext PposNum, PnegNum;
   encoder2.encode(posNum, scale, PposNum);
@@ -160,6 +362,7 @@ int main()
   Ciphertext CposNum, CnegNum;
   encryptor2.encrypt(PposNum, CposNum);
   encryptor2.encrypt(PnegNum, CnegNum);
+*/
 
   //B对TposNum、TnegNum的倒数进行编码和加密
   //这里要注意编码的方式，不能对一个常数进行编码，因为常数直接进行编码是整个vector都是一个相同的数
@@ -627,7 +830,7 @@ int main()
   decryptor2.decrypt(IVi, plain_IVi);
   vector<double> result_IVi;
   encoder2.decode(plain_IVi, result_IVi);
-  print_vector(result_IVi, TboxNum + 1, 12);
+  print_vector(result_IVi, TboxNum, 12);
 
   //根据每个特征的分箱数进行旋转和求和操作，把IVi值加起来
   Ciphertext Sum[feaNum];
@@ -684,14 +887,14 @@ int main()
   //记录移位位置
   int shift[feaNum] = {0};
   shift[0] = 0;
-  int shiftSum=0;
+  int shiftSum = 0;
 
   if (feaNum > 1)
   {
     for (int i = 1; i < feaNum; i++)
     {
-      shiftSum+=boxNum[i - 1];
-      shift[i] = shiftSum-i; //紧接着上面一个IV值
+      shiftSum += boxNum[i - 1];
+      shift[i] = shiftSum - i; //紧接着上面一个IV值
     }
   }
 
