@@ -121,11 +121,26 @@ int main()
   };
 */
 
-  int TsampleNum = 100;                            //样本总数, 样本总数=所有的正样本数+所有的负样本数
-  const int feaNum = 5;                            //总的特征数量
-  const int boxNum[feaNum] = {10, 10, 10, 10, 10}; //分箱数, 10, 20, 30 ,40等, 不同的特征对应的分箱数可以不同
-  double TposNum[feaNum] = {60, 60, 60, 60, 60};   //所有的正样本数
-  double TnegNum[feaNum] = {40, 40, 40, 40, 40};   //所有的负样本数
+  int TsampleNum = 100;    //样本总数, 样本总数=所有的正样本数+所有的负样本数
+  const int feaNum = 2000;  //总的特征数量
+  int boxNum[feaNum] = {}; //分箱数, 10, 20, 30 ,40等, 不同的特征对应的分箱数可以不同
+  for (int i = 0; i < feaNum; i++)
+  {
+    boxNum[i] = 10;
+  }
+
+  double TposNum[feaNum] = {}; //所有的正样本数
+  for (int i = 0; i < feaNum; i++)
+  {
+    TposNum[i] = 60;
+  }
+
+  double TnegNum[feaNum] = {}; //所有的负样本数
+
+  for (int i = 0; i < feaNum; i++)
+  {
+    TnegNum[i] = 40;
+  }
 
   int TboxNum = 0; //分箱总数
   for (int i = 0; i < feaNum; i++)
@@ -133,30 +148,31 @@ int main()
     TboxNum += boxNum[i];
   }
 
+  vector<double> padAllVec = {8, 12, 7, 9, 8, 16, 10, 15, 9, 6};
+
   //每个分箱样本数量=每个分箱的正样本+负样本数
-  vector<double> SsampleNum[feaNum] = {
-      {8, 12, 7, 9, 8, 16, 10, 15, 9, 6},
-      {8, 12, 7, 9, 8, 16, 10, 15, 9, 6},
-      {8, 12, 7, 9, 8, 16, 10, 15, 9, 6},
-      {8, 12, 7, 9, 8, 16, 10, 15, 9, 6},
-      {8, 12, 7, 9, 8, 16, 10, 15, 9, 6}};
+  vector<double> SsampleNum[feaNum] = {{}};
+  for (int i = 0; i < feaNum; i++)
+  {
+    SsampleNum[i] = padAllVec;
+  }
 
+  vector<double> padPosVec = {5, 7, 3, 4, 5, 10, 8, 9, 4, 5};
   //分箱的正样本, 这里使用浮点而不用整型，符合编码的函数参数类型double
-  vector<double> SposNum[feaNum] = {
-      {5, 7, 3, 4, 5, 10, 8, 9, 4, 5},
-      {5, 7, 3, 4, 5, 10, 8, 9, 4, 5},
-      {5, 7, 3, 4, 5, 10, 8, 9, 4, 5},
-      {5, 7, 3, 4, 5, 10, 8, 9, 4, 5},
-      {5, 7, 3, 4, 5, 10, 8, 9, 4, 5},
-  };
+  vector<double> SposNum[feaNum] = {{}};
 
+  for (int i = 0; i < feaNum; i++)
+  {
+    SposNum[i] = padPosVec;
+  }
+
+  vector<double> padNegVec = {3, 5, 4, 5, 3, 6, 2, 6, 5, 1};
   //分箱的正样本和负样本数,
-  vector<double> SnegNum[feaNum] = {
-      {3, 5, 4, 5, 3, 6, 2, 6, 5, 1},
-      {3, 5, 4, 5, 3, 6, 2, 6, 5, 1},
-      {3, 5, 4, 5, 3, 6, 2, 6, 5, 1},
-      {3, 5, 4, 5, 3, 6, 2, 6, 5, 1},
-      {3, 5, 4, 5, 3, 6, 2, 6, 5, 1}};
+  vector<double> SnegNum[feaNum] = {{}};
+  for (int i = 0; i < feaNum; i++)
+  {
+    SnegNum[i] = padNegVec;
+  }
 
   //生成模拟数据, A方先按上面的数据造出对应的明文标签（满足上面的正样本和负样本数）
   vector<int> alltag[feaNum] = {};
@@ -195,8 +211,8 @@ int main()
         sampleSeq[curSquNum].push_back(k);
       }
 
-      cout << "第 " << i << " 生成的分箱 " << j << " 样本编号" << endl;
-      print_vector(sampleSeq[curSquNum], sampleSeq[curSquNum].size(), 12);
+      //cout << "第 " << i << " 生成的分箱 " << j << " 样本编号" << endl;
+      //print_vector(sampleSeq[curSquNum], 10, 12);
 
       curSquNum++; //一直递增到TboxNum
     }
@@ -233,11 +249,11 @@ int main()
       CfeaNegNum[i].push_back(neg);
     }
 
-    cout << "第 " << i << " 特征正样本向量" << endl;
-    print_vector(CfeaPosNum[i], CfeaPosNum[i].size(), 12);
+    //cout << "第 " << i << " 特征正样本向量" << endl;
+    //print_vector(CfeaPosNum[i], CfeaPosNum[i].size(), 12);
 
-    cout << "第 " << i << " 特征负样本向量" << endl;
-    print_vector(CfeaNegNum[i], CfeaNegNum[i].size(), 12);
+    //cout << "第 " << i << " 特征负样本向量" << endl;
+    //print_vector(CfeaNegNum[i], CfeaNegNum[i].size(), 12);
   }
 
   //通过特征的分箱数计算ckks一次性能计算的特征数量
@@ -286,11 +302,11 @@ int main()
       originNegVec[r].insert(originNegVec[r].end(), CfeaNegNum[t].begin(), CfeaNegNum[t].end());
     }
 
-    cout << "拼接生成的明文正样本数向量" << endl;
-    print_vector(originPosVec[r], originPosVec[r].size(), 12);
+    //cout << "拼接生成的明文正样本数向量" << endl;
+    //print_vector(originPosVec[r], originPosVec[r].size(), 12);
 
-    cout << "拼接生成的明文负样本数向量" << endl;
-    print_vector(originNegVec[r], originNegVec[r].size(), 12);
+    //cout << "拼接生成的明文负样本数向量" << endl;
+    //print_vector(originNegVec[r], originNegVec[r].size(), 12);
 
     //当前处理的特征总数
     int curFeaTotal = ckksDealNum[r + 1] - ckksDealNum[r];
@@ -309,12 +325,14 @@ int main()
     encoder2.encode(originNegVec[r], scale, PnegVec);
     encryptor2.encrypt(PnegVec, CnegNum);
 
+    /*
     Plaintext Pcheck;
     decryptor2.decrypt(CposNum, Pcheck); //解密
     vector<double> vecCheck;
     encoder2.decode(Pcheck, vecCheck); //解码
     cout << "CposNum计算结果 ......." << endl;
-    print_vector(vecCheck, TboxNum, 12);
+    print_vector(vecCheck, curTotalBox, 12);
+*/
 
     vector<double> Pg = {}; //g_i的明文数据,用于明文方式计算结果比对//
 
@@ -442,7 +460,7 @@ int main()
     evaluator2.relinearize_inplace(pdb[1], relin_keys2);
     evaluator2.rescale_to_next_inplace(pdb[1]);
 
-    cout << "2 finished!" << endl;
+
     Ciphertext tpdg3, tpdb3; //g_i and b_i的3次项计算
     //复用tempdg1和tempdb1，dg2和db2
     evaluator2.multiply(dg2, tempdg1, tpdg3);
@@ -492,7 +510,6 @@ int main()
     evaluator2.relinearize_inplace(pdb[3], relin_keys2);
     evaluator2.rescale_to_next_inplace(pdb[3]);
 
-    cout << "4 finished!" << endl;
 
     Ciphertext tempgbc5, tempg52, tempb52, dg3, db3; //g_i and b_i的5次项计算
 
@@ -511,7 +528,6 @@ int main()
     evaluator2.relinearize_inplace(tempb52, relin_keys2);
     evaluator2.rescale_to_next_inplace(tempb52);
 
-    cout << " 5 1 finished!" << endl;
     //计算dg3
     Ciphertext dg1, db1;
     parms_id_type Cg_parms_id = Cg.parms_id();
@@ -532,7 +548,6 @@ int main()
     evaluator2.relinearize_inplace(db3, relin_keys2);
     evaluator2.rescale_to_next_inplace(db3);
 
-    cout << " 5 2 finished!" << endl;
 
     //计算 pdg[4]
     evaluator2.multiply(tempg52, dg3, pdg[4]);
@@ -543,10 +558,7 @@ int main()
     evaluator2.relinearize_inplace(pdb[4], relin_keys2);
     evaluator2.rescale_to_next_inplace(pdb[4]);
 
-    cout << "5 finished!" << endl;
-
     Ciphertext tempgbc6, tempg62, tempb62; //g_i and b_i的6次项计算
-
     parms_id_type Csub6_parms_id = Csub.parms_id();
     evaluator2.mod_switch_to_inplace(COEEF[5], Csub6_parms_id);
 
@@ -569,8 +581,6 @@ int main()
     evaluator2.rescale_to_next_inplace(pdg[5]);
     evaluator2.relinearize_inplace(pdb[5], relin_keys2);
     evaluator2.rescale_to_next_inplace(pdb[5]);
-
-    cout << "6 finished!" << endl;
 
     Ciphertext tempgbc7, dg7, db7;      //g_i and b_i的7次项计算
     evaluator2.multiply(dg3, dg4, dg7); //注意dg3和dg4处于同一个level上，可以相乘
@@ -643,7 +653,6 @@ int main()
     evaluator2.relinearize_inplace(pdb[7], relin_keys2);
     evaluator2.rescale_to_next_inplace(pdb[7]);
 
-    cout << "8 finished!" << endl;
 
     Ciphertext mgP1, mbP1, tempgbc9, tempdg9, tempdb9; //g_i and b_i的9次项计算
 
@@ -774,11 +783,11 @@ int main()
     //现在计算该特征的整个IV值,密文上的向量分量求和运算需要旋转操作，分量1到分箱数求和，需要旋转向量后然后相加。
 
     Plaintext plain_IVi;
-    cout << "Decrypt and decode IVi......" << endl;
+    //cout << "Decrypt and decode IVi......" << endl;
     decryptor2.decrypt(IVi, plain_IVi);
     vector<double> result_IVi;
     encoder2.decode(plain_IVi, result_IVi);
-    print_vector(result_IVi, curTotalBox, 12);
+    //print_vector(result_IVi, curTotalBox, 12);
 
     //根据每个特征的分箱数进行旋转和求和操作，把IVi值加起来
     //ckksDealNum[r] + 1; i <= ckksDealNum[r + 1]
@@ -791,7 +800,7 @@ int main()
       int sumIndex = i - ckksDealNum[r] - 1;
 
       evaluator2.rotate_vector(IVi, 1, galois_keys2, rotated[0]);
-      evaluator2.add(IVi, rotated[0], Sum[i]);
+      evaluator2.add(IVi, rotated[0], Sum[sumIndex]);
 
       for (int j = 1; j < rotNum - 1; j++) //注意这儿的左移次数，最大只需移动分箱-1次
       {
@@ -812,13 +821,14 @@ int main()
     {
       for (int i = ckksDealNum[r] + 1 + 1; i <= ckksDealNum[r + 1]; i++)
       {
+        int exIndex = i - ckksDealNum[r] - 1; //这儿i是从1开始
         padding += boxNum[i - 1];
 
         for (int j = 0; j < padding; j++)
         {
-          extract[i].push_back(0.0);
+          extract[exIndex].push_back(0.0);
         }
-        extract[i].push_back(1.0);
+        extract[exIndex].push_back(1.0);
       }
     }
 
@@ -831,8 +841,6 @@ int main()
     parms_id_type Sum_parms_id = Sum[0].parms_id(); //所有的Sum[I]的level都是相同的
 
     Ciphertext IV;
-
-    cout << "here0!!!" << endl;
 
     //记录移位位置
     int shift[curFeaTotal] = {0};
@@ -876,7 +884,7 @@ int main()
       }
     }
 
-    cout << "Decrypt and decode  IV......" << endl;
+    cout << "Decrypt and decode  IV in round " << r << endl;
 
     /*
   Plaintext Sum_plain_IV[feaNum];
@@ -890,15 +898,12 @@ int main()
     print_vector(Sum_result[i], TboxNum, 12);
   }
 */
-    cout << "here!!!" << endl;
     //对提取后的IV进行解密
     Plaintext plainIV;
     vector<double> IvResult;
     decryptor2.decrypt(IV, plainIV);
     encoder2.decode(plainIV, IvResult);
-    print_vector(IvResult, curTotalBox, 12);
-
-    cout << "here2!!!" << endl;
+    print_vector(IvResult, curFeaTotal, 12);
 
     //解密结果比对
     Plaintext plain_g, plain_b; //开始计算明文结果
@@ -909,7 +914,7 @@ int main()
       A.push_back(Pg[i] - Pb[i]); //g-b=g-1-(b-1)
     }
 
-    cout << "A_i*g_i预期结果:" << endl;
+    //cout << "A_i*g_i预期结果:" << endl;
     vector<double> true_result_g;
     for (int i = 0; i < curTotalBox; i++)
     {
@@ -919,13 +924,13 @@ int main()
                  0.0482549424 * pow(x, 9) - 0.0434294481 * pow(x, 10);
       true_result_g.push_back(f * A[i]);
     }
-    print_vector(true_result_g, curTotalBox, 12);
+    print_vector(true_result_g, 20, 12);
 
     decryptor2.decrypt(encrypt_g, plain_g); //解密
     vector<double> result_g;
     encoder2.decode(plain_g, result_g); //解码
     cout << "A_i*g_i计算结果 ......." << endl;
-    print_vector(result_g, curTotalBox, 12);
+    print_vector(result_g, 20, 12);
 
     cout << "A_i*b_i预期结果:" << endl;
     vector<double> true_result_b;
@@ -937,13 +942,13 @@ int main()
                  0.0482549424 * pow(x, 9) - 0.0434294481 * pow(x, 10);
       true_result_b.push_back(f * A[i]);
     }
-    print_vector(true_result_b, curTotalBox, 12);
+    print_vector(true_result_b, 20, 12);
 
     decryptor2.decrypt(encrypt_b, plain_b); //解密
     vector<double> result_b;
     encoder2.decode(plain_b, result_b); //解码
     cout << "A_i*b_i计算结果 ......." << endl;
-    print_vector(result_b, curTotalBox, 12);
+    print_vector(result_b, 20, 12);
 
     cout << "IV预期结果:" << endl;
     vector<double> true_result_IVi, temp;
@@ -966,7 +971,7 @@ int main()
         Sum_Plain[sumIndex] += temp[j + index];
       }
 
-      cout << "IV value of feature index " << sumIndex << " is: " << Sum_Plain[sumIndex] << endl;
+      //cout << "IV value of feature index " << sumIndex << " is: " << Sum_Plain[sumIndex] << endl;
     }
   }
 
