@@ -7,28 +7,7 @@
 using namespace std;
 using namespace seal;
 
-vector<float> read(string file)
-{
-  string s;
-  ifstream inf;
-  inf.open(file); //打开F为文件所在位置，
-  vector<float> readArray(0);
-  float value = 0;
 
-  while (getline(inf, s)) //getline(inf,s)是逐行读取inf中的文件信息
-  {
-    //cout << "read string is  " << s << endl;
-    if (s != " " && s != "\n")
-    {
-      value = atof(s.c_str());
-      readArray.push_back(value);
-    }
-  }
-
-  std::cout << "read total: " << readArray.size() << endl;
-  inf.close();
-  return readArray;
-}
 
 int main()
 {
@@ -57,7 +36,8 @@ int main()
 
   size_t poly_modulus_degree2 = 16384; //slot数量为16384/2=8192
   params2.set_poly_modulus_degree(poly_modulus_degree2);
-  params2.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree2, {60, 50, 50, 50, 50, 50, 50, 60})); //包括密文向量分量提取和常数系数乘积在内，整个计算乘法深度为6, 模数链乘积比特位数为60+50*6+60=420<438(符合安全参数)
+  params2.set_coeff_modulus(CoeffModulus::Create(poly_modulus_degree2, {60, 50, 50, 50, 50, 50, 50, 60})); 
+  //包括密文向量分量提取和常数系数乘积在内，整个计算乘法深度为6, 模数链乘积比特位数为60+50*6+60=420<438(符合安全参数)
 
   //选用2^50进行编码，这个参数是精度的设置，噪声在10-15比特，所以最终计算的精度为35-40比特（50-15， 50-10）
   double scale = pow(2.0, 50);
@@ -98,48 +78,26 @@ int main()
   //B根据实际数据和特征进行分箱，分箱时需注意每个分箱中数据不能为0，否则对数计算为无穷大，失去意义
   //注意分箱数、分箱正负样本数，总的正负样本数等参数与每个特征有关，不同的特征对应的这些数可以是不同的
 
-  /*
-  int TsampleNum = 400000;                   //样本总数,以40万为例, 样本总数=所有的正样本数+所有的负样本数
-  const int feaNum = 2;                      //总的特征数量
-  const int boxNum[feaNum] = {10, 10};       //分箱数, 10, 20, 30 ,40等, 不同的特征对应的分箱数可以不同
-  double TposNum[feaNum] = {220000, 180000}; //所有的正样本数
-  double TnegNum[feaNum] = {180000, 220000}; //所有的负样本数
-
-  //10个分箱中每个分箱样本数量=10个分箱每个分箱的正样本+负样本数
-  vector<double> SsampleNum[feaNum] = {{45000, 35000, 55000, 25000, 35000, 45000, 15000, 65000, 60000, 20000},
-                                       {40000, 40000, 50000, 30000, 30000, 50000, 20000, 60000, 70000, 10000}};
-  //10个分箱的正样本和负样本数
-  //这里使用浮点而不用整型，符合编码的函数参数类型double
-  vector<double> SposNum[feaNum] = {
-      {25000, 15000, 40000, 20000, 15000, 15000, 10000, 45000, 30000, 5000},
-      {20000, 15000, 40000, 15000, 15000, 15000, 10000, 15000, 30000, 5000},
-  };
-
-  vector<double> SnegNum[feaNum] = {
-      {20000, 20000, 15000, 5000, 20000, 30000, 5000, 20000, 30000, 15000},
-      {20000, 25000, 10000, 15000, 15000, 35000, 10000, 45000, 40000, 5000},
-  };
-*/
-
-  int TsampleNum = 100;    //样本总数, 样本总数=所有的正样本数+所有的负样本数
-  const int feaNum = 2000;  //总的特征数量
+  //--------------------------------------------------------------------------------------------------//
+  int TsampleNum = 200;    //样本总数, 样本总数=所有的正样本数+所有的负样本数
+  const int feaNum = 1000;  //总的特征数量
   int boxNum[feaNum] = {}; //分箱数, 10, 20, 30 ,40等, 不同的特征对应的分箱数可以不同
   for (int i = 0; i < feaNum; i++)
   {
-    boxNum[i] = 10;
+    boxNum[i] = 20;
   }
 
   double TposNum[feaNum] = {}; //所有的正样本数
   for (int i = 0; i < feaNum; i++)
   {
-    TposNum[i] = 60;
+    TposNum[i] = 120;
   }
 
   double TnegNum[feaNum] = {}; //所有的负样本数
 
   for (int i = 0; i < feaNum; i++)
   {
-    TnegNum[i] = 40;
+    TnegNum[i] = 80;
   }
 
   int TboxNum = 0; //分箱总数
@@ -148,7 +106,7 @@ int main()
     TboxNum += boxNum[i];
   }
 
-  vector<double> padAllVec = {8, 12, 7, 9, 8, 16, 10, 15, 9, 6};
+  vector<double> padAllVec = {8, 12, 7, 9, 8, 16, 10, 15, 9, 6, 8, 12, 7, 9, 8, 16, 10, 15, 9, 6};
 
   //每个分箱样本数量=每个分箱的正样本+负样本数
   vector<double> SsampleNum[feaNum] = {{}};
@@ -157,7 +115,7 @@ int main()
     SsampleNum[i] = padAllVec;
   }
 
-  vector<double> padPosVec = {5, 7, 3, 4, 5, 10, 8, 9, 4, 5};
+  vector<double> padPosVec = {5, 7, 3, 4, 5, 10, 8, 9, 4, 5, 5, 7, 3, 4, 5, 10, 8, 9, 4, 5};
   //分箱的正样本, 这里使用浮点而不用整型，符合编码的函数参数类型double
   vector<double> SposNum[feaNum] = {{}};
 
@@ -166,7 +124,7 @@ int main()
     SposNum[i] = padPosVec;
   }
 
-  vector<double> padNegVec = {3, 5, 4, 5, 3, 6, 2, 6, 5, 1};
+  vector<double> padNegVec = {3, 5, 4, 5, 3, 6, 2, 6, 5, 1, 3, 5, 4, 5, 3, 6, 2, 6, 5, 1};
   //分箱的正样本和负样本数,
   vector<double> SnegNum[feaNum] = {{}};
   for (int i = 0; i < feaNum; i++)
@@ -905,6 +863,7 @@ int main()
     encoder2.decode(plainIV, IvResult);
     print_vector(IvResult, curFeaTotal, 12);
 
+   
     //解密结果比对
     Plaintext plain_g, plain_b; //开始计算明文结果
 
@@ -914,6 +873,7 @@ int main()
       A.push_back(Pg[i] - Pb[i]); //g-b=g-1-(b-1)
     }
 
+  
     //cout << "A_i*g_i预期结果:" << endl;
     vector<double> true_result_g;
     for (int i = 0; i < curTotalBox; i++)
@@ -950,6 +910,8 @@ int main()
     cout << "A_i*b_i计算结果 ......." << endl;
     print_vector(result_b, 20, 12);
 
+   
+
     cout << "IV预期结果:" << endl;
     vector<double> true_result_IVi, temp;
     double Sum_Plain[curFeaTotal] = {0.0};
@@ -971,8 +933,10 @@ int main()
         Sum_Plain[sumIndex] += temp[j + index];
       }
 
-      //cout << "IV value of feature index " << sumIndex << " is: " << Sum_Plain[sumIndex] << endl;
+      cout << "IV value of feature index " << sumIndex << " is: " << Sum_Plain[sumIndex] << endl;
     }
+
+    
   }
 
   //结束计时
