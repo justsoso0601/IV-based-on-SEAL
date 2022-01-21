@@ -8,7 +8,7 @@ using namespace std;
 using namespace seal;
 
 //函数声明
-void TaylorCompu(Ciphertext &CG, Ciphertext &CB, Ciphertext &encrypt_g, Ciphertext &encrypt_b, CKKSEncoder &encoder, Encryptor &encryptor, Evaluator &evaluator, RelinKeys &relin_keys, GaloisKeys &galois_keys);
+void TaylorCompu(Ciphertext &CG, Ciphertext &CB, Ciphertext &encrypt_g, Ciphertext &encrypt_b, CKKSEncoder &encoder, Encryptor &encryptor, Evaluator &evaluator, RelinKeys &relin_keys, GaloisKeys &galois_keys); //泰勒展开密态求值函数
 
 int main()
 {
@@ -32,7 +32,6 @@ int main()
 		1.poly_module_degree(模多项式的次数)
 		2.coeff_modulus（密文多项式系数的模数）
 		3.scale（浮点数值的放大规模）
-		注意：CKKS里面没有明文多项式的系数模数，因为CKKS里面把噪声也视为明文的一部分，不需要模数来去除噪声
   */
 
   size_t poly_modulus_degree = 16384; //slot数量为16384/2=8192
@@ -63,25 +62,20 @@ int main()
 
   //针对每个特征进行IV值的计算，这里面主要用到每个分箱中的正样本和负样本数量，总的正样本和负样本数量
   //A对标签进行加密，B进行IV值计算
-  //B根据实际数据和特征进行分箱，分箱时需注意每个分箱中数据不能为0，否则对数计算为无穷大，失去意义
-  //注意分箱数、分箱正负样本数，总的正负样本数等参数与每个特征有关，不同的特征对应的这些数可以是不同的
+  //B根据实际数据和特征进行分箱，分箱时需注意每个分箱中数据不能为0，分箱数大于1, 否则对数计算为无穷大，失去意义
+  //注意分箱数、分箱正负样本数等参数与每个特征有关，不同的特征对应的这些数可以是不同的
 
   //--------------------------------------------------------------------------------------------------//
-  int TsampleNum = 1000;         //样本总数, 样本总数=所有的正样本数+所有的负样本数
-  const int feaNum = 10;         //总的特征数量
+  int TsampleNum = 1000;                                           //样本总数, 样本总数=所有的正样本数+所有的负样本数
+  const int feaNum = 10;                                           //总的特征数量
   int boxNum[feaNum] = {10, 20, 25, 40, 50, 100, 100, 50, 40, 25}; //分箱数, 10, 20, 30 ,40等, 不同的特征对应的分箱数可以不同
-                                /*
+
+  /*
   for (int i = 0; i < feaNum; i++)
   {
     boxNum[i] = 10;
   }
 */
-
-  int TboxNum = 0; //分箱总数
-  for (int i = 0; i < feaNum; i++)
-  {
-    TboxNum += boxNum[i];
-  }
 
   int Rand;
   srand((unsigned)time(NULL)); //time()用系统时间初始化种。为rand()生成不同的随机种子。
@@ -97,18 +91,13 @@ int main()
 
   //每个分箱样本数量=每个分箱的正样本+负样本数
   vector<double> SsampleNum[feaNum] = {{}};
-  //cout << "SsampleNum : " << endl;
   for (int i = 0; i < feaNum; i++)
   {
     for (int j = 0; j < boxNum[i]; j++)
     {
-      SsampleNum[i].push_back(TsampleNum / boxNum[i]); //这儿假设每个分箱中样本数量相同，实际中可以不同
+      SsampleNum[i].push_back(TsampleNum / boxNum[i]);
+      //这儿假设每个分箱中样本数量相同，实际中可以不同
     }
-    // for (auto v : SsampleNum[i])
-    //{
-    //  cout << v << " ";
-    //}
-    // cout << endl;
   }
 
   //A对每个特征的alltag进行加密，然后发送给B
@@ -137,7 +126,7 @@ int main()
     ret = cipherTagMap.insert(pair<int, Ciphertext>(j, CsampleTag));
     if (ret.second == false)
     {
-      cout << "The Num " << j << "already existed!" << endl;
+      cout << "The num " << j << "already existed!" << endl;
     }
   }
 
@@ -163,28 +152,16 @@ int main()
       encryptor.encrypt(PboxTotalNum, CboxTotalNum[j]);
     }
 
-    cout << "here ok 1" << endl;
     //下面计算每个分箱的正样本和负样本数
     Ciphertext CboxPosSum[bNum]; //每个分箱正样本数
     Ciphertext CboxNegSum[bNum]; //每个分箱负样本数
 
     //如果这里分箱内的样本编号是随意的，则应先把样本编号数据抽取出来，再根据这些编号数据进行对应的密文求和
-    //把0进行加密，方便求和
-    vector<double> zero = {};
-    zero.push_back(0.0);
-    Plaintext Pzero;
-    Ciphertext Czero;
-    encoder.encode(zero, scale, Pzero);
-    encryptor.encrypt(Pzero, Czero);
 
     int mapIndex = 0;
     for (int j = 0; j < bNum; j++)
     {
-      if (j == 0)
-      {
-        mapIndex += 0;
-      }
-      else
+      if (j > 0)
       {
         mapIndex += SsampleNum[i][j - 1];
       }
@@ -196,26 +173,16 @@ int main()
       encoder.encode(zero, scale, Pzero);
       encryptor.encrypt(Pzero, CboxPosSum[j]); //初始化为0的密文
 
-      cout << "here ok 2_0" << endl;
       for (int k = mapIndex; k < mapIndex + SsampleNum[i][j]; k++)
       {
         evaluator.add_inplace(CboxPosSum[j], cipherTagMap.at(k));
       }
 
-      Plaintext Pcheck;
-      decryptor.decrypt(CboxPosSum[j], Pcheck); //解密
-      vector<double> vecCheck;
-      encoder.decode(Pcheck, vecCheck); //解码
-      cout << "CposNum计算结果 ......." << j << endl;
-      print_vector(vecCheck, 1, 1);
-
-      cout << "here ok 2_1" << endl;
       //用分箱总数的密文-分箱正样本数的密文：得到分箱负样本数的密文
       evaluator.sub(CboxTotalNum[j], CboxPosSum[j], CboxNegSum[j]);
     }
 
     //把向量化的密文相加得到所有分箱的正负样本数的密文向量
-    //Ciphertext CposNum, CnegNum;
     vector<double> zero1 = {};
     zero1.push_back(0.0);
     Plaintext Pzero1;
@@ -232,16 +199,8 @@ int main()
       evaluator.add_inplace(CfeaPosNum[i], CboxPosSum[m]);
       evaluator.add_inplace(CfeaNegNum[i], CboxNegSum[m]);
     }
-
-    Plaintext Pcheck1;
-    decryptor.decrypt(CfeaPosNum[i], Pcheck1); //解密
-    vector<double> vecCheck1;
-    encoder.decode(Pcheck1, vecCheck1); //解码
-    cout << "CfeaPosNum计算结果 ......." << i << endl;
-    print_vector(vecCheck1, boxNum[i], 1);
   }
 
-  cout << "TposNum : " << endl;
   double TposNum[feaNum] = {}; //所有的正样本数
   for (int i = 0; i < feaNum; i++)
   {
@@ -250,25 +209,17 @@ int main()
     {
       TposNum[i] += alltag[j];
     }
-    cout << TposNum[i] << " ";
   }
-  cout << endl;
 
-  cout << "TnegNum : " << endl;
   double TnegNum[feaNum] = {}; //所有的负样本数
   for (int i = 0; i < feaNum; i++)
   {
     TnegNum[i] = TsampleNum - TposNum[i];
-    cout << TnegNum[i] << " ";
   }
-  cout << endl;
 
-  //cout << endl;
-
-  //分箱的正样本, 这里使用浮点而不用整型，符合编码的函数参数类型double
+  //分箱的正样本数, 用于明文计算，比对结果
   vector<double> SposNum[feaNum] = {{}};
 
-  cout << "VecposNum: " << endl;
   for (int i = 0; i < feaNum; i++)
   {
     int shift = 0;
@@ -282,20 +233,10 @@ int main()
       SposNum[i].push_back(curBoxpos);
       shift += SsampleNum[i][j];
     }
-
-    for (auto v : SposNum[i])
-    {
-      cout << v << " ";
-    }
-
-    cout << endl;
   }
 
-  cout << endl;
-
-  //分箱的负样本数
+  //分箱的负样本数, 用于明文计算，比对结果
   vector<double> SnegNum[feaNum] = {{}};
-  cout << "VecnegNum: " << endl;
 
   for (int i = 0; i < feaNum; i++)
   {
@@ -303,15 +244,7 @@ int main()
     {
       SnegNum[i].push_back(SsampleNum[i][j] - SposNum[i][j]);
     }
-
-    for (auto v : SnegNum[i])
-    {
-      cout << v << " ";
-    }
-    cout << endl;
   }
-
-  cout << endl;
 
   //通过特征的分箱数计算ckks一次性能计算的特征数量
   const int ckksLength = 16384 / 2;
@@ -338,17 +271,12 @@ int main()
 
   ckksDealNum.push_back(feaNum - 1); //添加最后一个记录
 
-  print_vector(ckksDealNum, ckksDealNum.size(), 10);
-
   //CKKS需要加密处理的轮数就是ckksDealNum的size-1, 因为人为添加了第一个数: -1
-  cout << "CKKS需要加密处理的轮数: " << ckksDealNum.size() - 1 << endl;
+  cout << "CKKS needs round number: " << ckksDealNum.size() - 1 << endl;
 
   //现在开始拼接每一轮CKKS需要加密的向量（分为正样本数向量和负样本数向量）
 
   const int round = ckksDealNum.size() - 1;
-  vector<double> originPosVec[round] = {};
-  vector<double> originNegVec[round] = {};
-
   //开始每一轮CKKS算法处理，最大利用该算法的向量化处理
   for (int r = 0; r < round; r++)
   {
@@ -368,11 +296,6 @@ int main()
     for (int t = ckksDealNum[r] + 1; t <= ckksDealNum[r + 1]; t++)
     {
       //把这一轮第t个特征所属分箱的正样本向量和负样本向量添加进来, 形成这一轮处理的整个向量
-      //originPosVec[r].insert(originPosVec[r].end(), SposNum[t].begin(), SposNum[t].end());
-      //originNegVec[r].insert(originNegVec[r].end(), SnegNum[t].begin(), SnegNum[t].end());
-
-      //Ciphertext CfeaPosNum[feaNum], CfeaNegNum[feaNum];
-
       curTotalBox += boxNum[t];
 
       //把对应的向量密文移位,然后加起来
@@ -385,49 +308,16 @@ int main()
         feaShiftSum += boxNum[t - 1];
       }
 
-      int shift = 0 - feaShiftSum; //负数往右移
+      int shift = 0 - feaShiftSum; //负数表示往右移
       evaluator.rotate_vector_inplace(CfeaPosNum[t], shift, galois_keys);
       evaluator.rotate_vector_inplace(CfeaNegNum[t], shift, galois_keys);
       evaluator.add_inplace(CposNum, CfeaPosNum[t]);
       evaluator.add_inplace(CnegNum, CfeaNegNum[t]);
     }
 
-    Plaintext Pcheck2;
-    decryptor.decrypt(CposNum, Pcheck2); //解密
-    vector<double> vecCheck2;
-    encoder.decode(Pcheck2, vecCheck2); //解码
-    cout << "CposNum计算结果 ......." << r << endl;
-    print_vector(vecCheck2, 20, 1);
-
-    //cout << "拼接生成的明文正样本数向量" << endl;
-    //print_vector(originPosVec[r], originPosVec[r].size(), 10);
-
-    //cout << "拼接生成的明文负样本数向量" << endl;
-    //print_vector(originNegVec[r], originNegVec[r].size(), 10);
-
     //当前处理的特征总数
     int curFeaTotal = ckksDealNum[r + 1] - ckksDealNum[r];
 
-    /*
-    //现在把这一轮不同特征聚合形成的正样本数向量和负样本数向量进行加密，传送给B
-    Ciphertext CposNum, CnegNum;
-
-    Plaintext PposVec;
-    encoder.encode(originPosVec[r], scale, PposVec);
-    encryptor.encrypt(PposVec, CposNum);
-
-    Plaintext PnegVec;
-    encoder.encode(originNegVec[r], scale, PnegVec);
-    encryptor.encrypt(PnegVec, CnegNum);
-
-    
-    Plaintext Pcheck;
-    decryptor.decrypt(CposNum, Pcheck); //解密
-    vector<double> vecCheck;
-    encoder.decode(Pcheck, vecCheck); //解码
-    cout << "CposNum计算结果 ......." << endl;
-    print_vector(vecCheck, curTotalBox, 10);
-*/
     vector<double> Pg = {}; //g_i的明文数据,用于明文方式计算结果比对//
 
     for (int i = ckksDealNum[r] + 1; i <= ckksDealNum[r + 1]; i++) //展开所有特征的分箱分量，依次排好
@@ -487,6 +377,7 @@ int main()
     evaluator.relinearize_inplace(CB, relin_keys);
     evaluator.rescale_to_next_inplace(CB);
 
+    //计算泰勒展开式*Ai，这里为了降低乘法深度，我们将Ai*log(1+gi)先乘，再减去Ai*log(1+bi)
     Ciphertext encrypt_g, encrypt_b;
     TaylorCompu(CG, CB, encrypt_g, encrypt_b, encoder, encryptor, evaluator, relin_keys, galois_keys);
 
@@ -496,15 +387,7 @@ int main()
 
     //现在计算该特征的整个IV值,密文上的向量分量求和运算需要旋转操作，分量1到分箱数求和，需要旋转向量后然后相加。
 
-    Plaintext plain_IVi;
-    //cout << "Decrypt and decode IVi......" << endl;
-    decryptor.decrypt(IVi, plain_IVi);
-    vector<double> result_IVi;
-    encoder.decode(plain_IVi, result_IVi);
-    print_vector(result_IVi, curTotalBox, 10);
-
     //根据每个特征的分箱数进行旋转和求和操作，把IVi值加起来
-    //ckksDealNum[r] + 1; i <= ckksDealNum[r + 1]
     Ciphertext Sum[curFeaTotal];
 
     for (int i = ckksDealNum[r] + 1; i <= ckksDealNum[r + 1]; i++)
@@ -521,13 +404,6 @@ int main()
         evaluator.rotate_vector(IVi, j + 1, galois_keys, rotated[j]);
         evaluator.add_inplace(Sum[sumIndex], rotated[j]);
       }
-
-      Plaintext Pcheck3;
-      decryptor.decrypt(Sum[sumIndex], Pcheck3); //解密
-      vector<double> vecCheck3;
-      encoder.decode(Pcheck3, vecCheck3); //解码
-      cout << "Sum[sumIndex] ......." << sumIndex << endl;
-      print_vector(vecCheck3, 15, 10);
     }
 
     //对密文的IV进行对应分量的抽取,对密文的IV进行对应分量的抽取，
@@ -605,26 +481,7 @@ int main()
       }
     }
 
-    cout << "Decrypt and decode  IV in round " << r << endl;
-
-    /*
-  Plaintext Sum_plain_IV[feaNum];
-  vector<double> Sum_result[feaNum];
-
-  for (int i = 0; i < feaNum; i++)
-  {
-    cout << "IV value of index " << i << endl;
-    decryptor2.decrypt(Sum[i], Sum_plain_IV[i]);
-    encoder2.decode(Sum_plain_IV[i], Sum_result[i]);
-    print_vector(Sum_result[i], TboxNum, 12);
-  }
-*/
-    //对提取后的IV进行解密
-    Plaintext plainIV;
-    vector<double> IvResult;
-    decryptor.decrypt(IV, plainIV);
-    encoder.decode(plainIV, IvResult);
-    print_vector(IvResult, curFeaTotal, 10);
+    cout << "Decrypt and decode IV in round " << r << endl;
 
     //解密结果比对
     Plaintext plain_g, plain_b; //开始计算明文结果
@@ -645,13 +502,13 @@ int main()
                  0.0482549424 * pow(x, 9) - 0.0434294481 * pow(x, 10);
       true_result_g.push_back(f * A[i]);
     }
-    print_vector(true_result_g, 20, 10);
+    print_vector(true_result_g, curTotalBox, 10);
 
     decryptor.decrypt(encrypt_g, plain_g); //解密
     vector<double> result_g;
     encoder.decode(plain_g, result_g); //解码
     cout << "A_i*g_i计算结果 ......." << endl;
-    print_vector(result_g, 20, 10);
+    print_vector(result_g, curTotalBox, 10);
 
     cout << "A_i*b_i预期结果:" << endl;
     vector<double> true_result_b;
@@ -663,15 +520,16 @@ int main()
                  0.0482549424 * pow(x, 9) - 0.0434294481 * pow(x, 10);
       true_result_b.push_back(f * A[i]);
     }
-    print_vector(true_result_b, 20, 10);
+    print_vector(true_result_b, curTotalBox, 10);
 
     decryptor.decrypt(encrypt_b, plain_b); //解密
     vector<double> result_b;
     encoder.decode(plain_b, result_b); //解码
     cout << "A_i*b_i计算结果 ......." << endl;
-    print_vector(result_b, 20, 10);
+    print_vector(result_b, curTotalBox, 10);
 
     cout << "IV预期结果:" << endl;
+    cout << "[ ";
     vector<double> true_result_IVi, temp;
     double Sum_Plain[curFeaTotal] = {0.0};
 
@@ -681,20 +539,27 @@ int main()
     }
 
     int indexStart = ckksDealNum[r] + 1;
-    //int index = -boxNum[indexStart];
     int index = 0;
     for (int i = ckksDealNum[r] + 1; i <= ckksDealNum[r + 1]; i++)
     {
       int sumIndex = i - ckksDealNum[r] - 1;
       if (i > 0)
-        index += boxNum[i-1]; //第i个特征的IVi的求和index位于temp[index]处
+        index += boxNum[i - 1]; //第i个特征的IVi的求和index位于temp[index]处
       for (int j = 0; j < boxNum[i]; j++)
       {
         Sum_Plain[sumIndex] += temp[j + index];
       }
-
-      cout << "IV value of feature index " << sumIndex << " is: " << Sum_Plain[sumIndex] << endl;
+      cout << Sum_Plain[sumIndex] << " ";
     }
+    cout << "] " << endl;
+
+    //对提取后的IV进行解密
+    cout << "IV计算结果:" << endl;
+    Plaintext plainIV;
+    vector<double> IvResult;
+    decryptor.decrypt(IV, plainIV);
+    encoder.decode(plainIV, IvResult);
+    print_vector(IvResult, curFeaTotal, 10);
   }
 
   //结束计时
@@ -705,6 +570,8 @@ int main()
   return 0;
 }
 
+
+//函数定义
 void TaylorCompu(Ciphertext &CG, Ciphertext &CB, Ciphertext &encrypt_g, Ciphertext &encrypt_b, CKKSEncoder &encoder, Encryptor &encryptor, Evaluator &evaluator, RelinKeys &relin_keys, GaloisKeys &galois_keys)
 {
   double scale = pow(2.0, 50);
