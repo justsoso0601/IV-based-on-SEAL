@@ -6,7 +6,7 @@
 			[
 				{
 					"build" : ".",
-					"jsonFile" : "directory-.-f5ebdc15457944623624.json",
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
 					"minimumCMakeVersion" : 
 					{
 						"string" : "3.8"
@@ -19,7 +19,7 @@
 					]
 				}
 			],
-			"name" : "",
+			"name" : "Debug",
 			"projects" : 
 			[
 				{
@@ -39,7 +39,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "TrySeal::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-TrySeal-9d12b18a784e18057315.json",
+					"jsonFile" : "target-TrySeal-Debug-c3e479a4499ecb0a2850.json",
 					"name" : "TrySeal",
 					"projectIndex" : 0
 				}

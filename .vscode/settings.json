@@ -4,6 +4,7 @@
     "*.wpy": "vue",
     "*.wxml": "html",
     "*.wxss": "css",
-    "ostream": "cpp"
+    "ostream": "cpp",
+    "iostream": "cpp"
   }
 }

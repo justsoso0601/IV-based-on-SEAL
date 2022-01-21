@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = -isystem /usr/local/include/SEAL-3.7
 
-CXX_FLAGS = -pthread -std=gnu++17
+CXX_FLAGS = -g -pthread -std=gnu++17
 

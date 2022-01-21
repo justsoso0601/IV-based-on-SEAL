@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/light/code/src/IV-based-on-SEAL/build",
+  "command": "/opt/rh/devtoolset-10/root/usr/bin/c++  -isystem /usr/local/include/SEAL-3.7 -g -pthread -std=gnu++17 -o CMakeFiles/TrySeal.dir/trySeal.cpp.o -c /home/light/code/src/IV-based-on-SEAL/trySeal.cpp",
+  "file": "/home/light/code/src/IV-based-on-SEAL/trySeal.cpp"
+}
+]
